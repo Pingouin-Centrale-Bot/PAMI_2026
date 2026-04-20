@@ -1,0 +1,6 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "pami_2026_lib")(type "KiCad")(uri "${KIPRJMOD}/pami_2026_lib.kicad_sym")(options "")(descr ""))
+  (lib (name "Seeed_Studio_XIAO_Series")(type "KiCad")(uri "${KIPRJMOD}/Seeed_Studio_XIAO_Series.kicad_sym")(options "")(descr ""))
+  (lib (name "JS102011SCQN")(type "KiCad")(uri "${KIPRJMOD}/JS102011SCQN/JS102011SCQN.kicad_sym")(options "")(descr ""))
+)
