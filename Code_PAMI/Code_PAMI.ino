@@ -3,7 +3,7 @@
 #include <ESP32Servo.h>
 
 // ===================== PINS =====================
-#define DIR_A 7
+#define DIR_A 0
 #define PWM_A 1
 
 #define DIR_B 7
