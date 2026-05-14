@@ -28,8 +28,8 @@
 const float DT = 0.010f;  // Période d'échantillonnage
 
 const float Kp = 0.80f;
-const float Ki = 0f;
-const float Kd = 0f;
+const float Ki = 0;
+const float Kd = 0;
 const float Kb = 1.00f;
 
 const int COMMANDE_MAX = 200;
