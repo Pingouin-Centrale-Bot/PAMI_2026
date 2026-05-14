@@ -3,7 +3,7 @@
 #include <ESP32Servo.h>
 
 // ===================== PINS =====================
-#define DIR_A 2
+#define DIR_A 0
 #define PWM_A 1
 
 #define DIR_B 7
@@ -27,13 +27,13 @@
 
 const float DT = 0.010f;  // Période d'échantillonnage
 
-const float Kp = 0.80f;
-const float Ki = 0;
-const float Kd = 0;
+const float Kp = 0.40f;
+const float Ki = 0.1f;
+const float Kd = 0.0f;
 const float Kb = 1.00f;
 
 const int COMMANDE_MAX = 200;
-const float TOLERANCE_TICKS = 20.0f;    // Fenêtre de convergence : |erreur| < 20 ticks ≈ 1,1 mm - A AUGMENTER AU BESOIN
+const float TOLERANCE_TICKS = 400.0f;    // Fenêtre de convergence : |erreur| < 20 ticks ≈ 1,1 mm - A AUGMENTER AU BESOIN
 const unsigned long TIMEOUT_MS = 8000;  // Timeout de sécurité
 
 
@@ -60,7 +60,7 @@ const float tickParTour = 2340.0;
 const float mmParTick = (diametreRoueMM * PI) / tickParTour;
 const float TICKS_PAR_MM = tickParTour / (diametreRoueMM * PI);  // ≈ 18,6  ticks/mm
 
-const float ENTRE_ROUES_MM = 120.0;
+const float ENTRE_ROUES_MM = 120.0 ;
 
 // ===================== PWM =====================
 const int pwmFrequence = 20000;
@@ -104,12 +104,12 @@ void IRAM_ATTR isrRight() {
   uint8_t state = (a << 1) | b;
   uint8_t index = (prevStateR << 2) | state;
 
-  ticksDroit += qTable[index];
+  ticksDroit -= qTable[index];
   prevStateR = state;
 }
 
 // ===================== ENCODEURS =====================
-void resetEncodeurs() {
+/* void resetEncodeurs() {
   noInterrupts();
   ticksGauche = 0;
   ticksDroit = 0;
@@ -121,7 +121,7 @@ void lireTicks(long &gauche, long &droit) {
   gauche = ticksGauche;
   droit = ticksDroit;
   interrupts();
-}
+} */
 
 // ===================== MOTEURS =====================
 
@@ -211,6 +211,15 @@ void attendreTirette() {
   Serial.println("Depart !");
 }
 
+void attendre_remet_Tirette(){
+  bool a = true;
+  while (a == true){
+    delay(100);
+    if (digitalRead(TIRETTE_PIN) == HIGH) {a = false;}
+  }
+
+}
+
 // ===================== SERVO =====================
 void actionServoFin() {
   monServo.write(0);
@@ -278,10 +287,6 @@ void runPIDUntilDone() {
 
   while (!isAtTarget()) {
 
-    if (obstacleDetecte()) {
-      stopMotors();
-      attendreObstacleDisparu();
-    }
     // Timeout de sécurité
     if (millis() - tStart > TIMEOUT_MS) {
       Serial.println("[PID] TIMEOUT — arrêt d'urgence");
@@ -291,6 +296,11 @@ void runPIDUntilDone() {
     // Attendre sans bloquer les ISR jusqu'au prochain pas de calcul
     if (millis() < nextStep) continue;
     nextStep += (unsigned long)(DT * 1000.0f);  // Programmer le pas suivant (+10 ms)
+    
+     if (obstacleDetecte()) {
+      stopMotors();
+      attendreObstacleDisparu(); 
+    }
 
     // Lecture des positions actuelles
     long tG, tD;
@@ -306,19 +316,19 @@ void runPIDUntilDone() {
     // Application des commandes (avec correction de sens physique)
     setMotors((int)(-cmdG), (int)(-cmdD));
 
+
     // AFFICHAGE DE DEBOGAGE
-    Serial.print("G: err=");
+   /*  Serial.print("G: err=");
     Serial.print(pidG.target - (float)tG, 0);
     Serial.print(" cmd=");
     Serial.print(cmdG, 0);
     Serial.print("  |  D: err=");
     Serial.print(pidD.target - (float)tD, 0);
     Serial.print(" cmd=");
-    Serial.println(cmdD, 0);
+    Serial.println(cmdD, 0); */
   }
 
   stopMotors();
-  Serial.println("[PID] Arrivé !");
 }
 // ===================== AVANCER EN LIGNE DROITE =====================
 
@@ -330,11 +340,11 @@ void moveForward(float dist_mm) {
   pidG.target = (float)ticks_cible;
   pidD.target = (float)ticks_cible;
 
-  Serial.print("[moveForward] ");
+/*   Serial.print("[moveForward] ");
   Serial.print(dist_mm);
   Serial.print(" mm → ");
   Serial.print(ticks_cible);
-  Serial.println(" ticks");
+  Serial.println(" ticks"); */
 
   runPIDUntilDone();
 }
@@ -349,13 +359,13 @@ void turnAngle(float angle_deg) {
   pidG.target = -(float)ticks_arc;
   pidD.target = (float)ticks_arc;
 
-  Serial.print("[turnAngle] ");
+/*   Serial.print("[turnAngle] ");
   Serial.print(angle_deg);
   Serial.print(" deg → arc=");
   Serial.print(arc_mm, 1);
   Serial.print(" mm → ");
   Serial.print(ticks_arc);
-  Serial.println(" ticks");
+  Serial.println(" ticks"); */
 
   runPIDUntilDone();
 }
@@ -404,17 +414,18 @@ void setup() {
 
   attachInterrupt(digitalPinToInterrupt(ENC_B_A), isrRight, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENC_B_B), isrRight, CHANGE);
-
-  Serial.println("==================================");
-  Serial.println("Tape une distance en mm puis Enter");
-  Serial.println("Exemple : 300");
-  Serial.println("==================================");
 }
 
 // ===================== LOOP =====================
 
 void loop() {
+
   attendreTirette();
-  moveForward(300);
+  moveForward(250);
+  turnAngle(180/2);
+  moveForward(200);
   actionServoFin();
+  attendre_remet_Tirette();
+
+ 
 }
